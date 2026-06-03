@@ -15,7 +15,7 @@ If you use external monitors and frequently unplug your Mac or let it go to slee
 
 ## Requirements
 
-- macOS 14.0 or later.
+- macOS 12.0 or later. (Note: Launch at Login functionality requires macOS 13.0+)
 - **Accessibility Permissions**: The app requires Accessibility permission to inspect and move windows. macOS will prompt you when you first launch the app.
 
 ## Building and Running
