@@ -12,10 +12,14 @@ APP_ICON_BASENAME="DisplayAnchor"
 BUILD_DIR="$ROOT_DIR/.build/$CONFIGURATION"
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
+INSTALL_DIR="${INSTALL_DIR:-/Applications}"
+INSTALLED_APP_DIR="$INSTALL_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 CODESIGN_IDENTITY="${CODESIGN_IDENTITY:-}"
+INSTALL_AFTER_BUILD="${INSTALL_AFTER_BUILD:-1}"
+LAUNCH_AFTER_INSTALL="${LAUNCH_AFTER_INSTALL:-1}"
 
 resolve_codesign_identity() {
     local requested_identity="$1"
@@ -36,6 +40,42 @@ signing_identity_exists() {
     [[ -n "$identity" ]] || return 1
 
     security find-identity -v -p codesigning 2>/dev/null | awk -F'"' -v identity="$identity" '$2 == identity { found = 1 } END { exit(found ? 0 : 1) }'
+}
+
+quit_running_app() {
+    if ! pgrep -x "$EXECUTABLE_NAME" >/dev/null; then
+        return
+    fi
+
+    echo "Stopping running $APP_NAME..."
+    pkill -x "$EXECUTABLE_NAME" || true
+
+    for _ in {1..20}; do
+        if ! pgrep -x "$EXECUTABLE_NAME" >/dev/null; then
+            return
+        fi
+
+        sleep 0.25
+    done
+
+    echo "Timed out waiting for $APP_NAME to quit." >&2
+    return 1
+}
+
+install_app() {
+    if [[ "$INSTALL_AFTER_BUILD" != "1" ]]; then
+        return
+    fi
+
+    quit_running_app
+    mkdir -p "$INSTALL_DIR"
+    /usr/bin/ditto "$APP_DIR" "$INSTALLED_APP_DIR"
+    echo "Installed $INSTALLED_APP_DIR"
+
+    if [[ "$LAUNCH_AFTER_INSTALL" == "1" ]]; then
+        /usr/bin/open "$INSTALLED_APP_DIR"
+        echo "Launched $INSTALLED_APP_DIR"
+    fi
 }
 
 swift build -c "$CONFIGURATION" --package-path "$ROOT_DIR"
@@ -108,3 +148,4 @@ else
 fi
 
 echo "Created $APP_DIR"
+install_app

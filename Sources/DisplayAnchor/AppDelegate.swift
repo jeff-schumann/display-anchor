@@ -218,13 +218,13 @@ final class MenuHeaderView: NSView {
 
         // Anchor glyph sits just after the name, sized to the title's cap height and centered on the
         // text's optical midline (same frame-center/cap-center midpoint used for the status dot).
-        let anchorSize = ceil(titleFont.capHeight * 1.6)
+        let anchorSize = ceil(titleFont.capHeight * 1.8)
         let titleFrameCenterY = titleY + titleH / 2
         let titleCapCenterY = titleFrameCenterY + (titleFont.capHeight / 2 + titleFont.descender / 2)
         let anchorCenterY = (titleFrameCenterY + titleCapCenterY) / 2
         anchorView.image = AnchorAsset.image
         anchorView.imageScaling = .scaleProportionallyUpOrDown
-        anchorView.frame = NSRect(x: titleLabel.frame.maxX + 6,
+        anchorView.frame = NSRect(x: titleLabel.frame.maxX + 5,
                                   y: anchorCenterY - anchorSize / 2,
                                   width: anchorSize, height: anchorSize)
         addSubview(anchorView)
