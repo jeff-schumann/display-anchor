@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let controller = DisplayAnchorController()
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
-    private let statusMenuItem = NSMenuItem(title: "Starting", action: nil, keyEquivalent: "")
+    private let headerView = MenuHeaderView()
     private let permissionMenuItem = NSMenuItem(title: "Open Accessibility Settings", action: #selector(openAccessibilitySettings), keyEquivalent: "")
     private let snapshotMenuItem = NSMenuItem(title: "Snapshot Now", action: #selector(snapshotNow), keyEquivalent: "")
     private let restoreMenuItem = NSMenuItem(title: "Restore Last Snapshot", action: #selector(restoreLastSnapshot), keyEquivalent: "")
@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         configureMenu()
 
         controller.onStatusChange = { [weak self] status in
-            self?.statusMenuItem.title = status.menuText
+            self?.headerView.update(statusText: status.menuText, color: status.indicatorColor)
             self?.updateMenuState()
         }
 
@@ -48,18 +48,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func configureMenu() {
         menu.delegate = self
 
-        statusMenuItem.isEnabled = false
-        menu.addItem(statusMenuItem)
+        let headerItem = NSMenuItem()
+        headerItem.view = headerView
+        menu.addItem(headerItem)
         menu.addItem(NSMenuItem.separator())
 
         permissionMenuItem.target = self
+        permissionMenuItem.image = Self.menuIcon("exclamationmark.shield")
         menu.addItem(permissionMenuItem)
         menu.addItem(NSMenuItem.separator())
 
         snapshotMenuItem.target = self
+        snapshotMenuItem.image = Self.menuIcon("camera.viewfinder")
         restoreMenuItem.target = self
+        restoreMenuItem.image = Self.menuIcon("arrow.counterclockwise")
         pauseMenuItem.target = self
+        pauseMenuItem.image = Self.menuIcon("pause.circle")
         launchAtLoginMenuItem.target = self
+        launchAtLoginMenuItem.image = Self.menuIcon("power")
         menu.addItem(snapshotMenuItem)
         menu.addItem(restoreMenuItem)
         menu.addItem(pauseMenuItem)
@@ -69,7 +75,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let quitItem = NSMenuItem(title: "Quit Display Anchor", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
+        quitItem.image = Self.menuIcon("xmark.circle")
         menu.addItem(quitItem)
+    }
+
+    private static func menuIcon(_ symbolName: String) -> NSImage? {
+        let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)?
+            .withSymbolConfiguration(config)
+        image?.isTemplate = true
+        return image
     }
 
     private func updateMenuState() {
@@ -78,7 +93,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         snapshotMenuItem.isEnabled = hasPermission && !controller.isPaused()
         restoreMenuItem.isEnabled = hasPermission
         pauseMenuItem.isEnabled = hasPermission
-        pauseMenuItem.state = controller.isPaused() ? .on : .off
+
+        let paused = controller.isPaused()
+        pauseMenuItem.title = paused ? "Resume Automatic Restore" : "Pause Automatic Restore"
+        pauseMenuItem.image = Self.menuIcon(paused ? "play.circle" : "pause.circle")
 
         switch LaunchAtLogin.status {
         case .enabled:
@@ -143,7 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 NSSound.beep()
             }
         } catch {
-            statusMenuItem.title = "Error: \(error.localizedDescription)"
+            headerView.update(statusText: "Error: \(error.localizedDescription)", color: .systemRed)
         }
 
         updateMenuState()
@@ -151,5 +169,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
+    }
+}
+
+/// Custom header shown at the top of the menu: app glyph, name, and a colored status line.
+@MainActor
+final class MenuHeaderView: NSView {
+    private let titleLabel = NSTextField(labelWithString: "Display Anchor ⚓️")
+    private let statusDot = NSImageView()
+    private let statusLabel = NSTextField(labelWithString: "Starting")
+
+    init() {
+        super.init(frame: NSRect(x: 0, y: 0, width: 240, height: 52))
+        setupSubviews()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupSubviews() {
+        titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
+        titleLabel.textColor = .labelColor
+        titleLabel.frame = NSRect(x: 16, y: 27, width: 210, height: 18)
+        addSubview(titleLabel)
+
+        // Status row spans the full width for maximum room.
+        let dotConfig = NSImage.SymbolConfiguration(pointSize: 8, weight: .bold)
+        statusDot.image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: nil)?
+            .withSymbolConfiguration(dotConfig)
+        statusDot.image?.isTemplate = true
+        statusDot.contentTintColor = .systemGreen
+        statusDot.frame = NSRect(x: 17, y: 10, width: 9, height: 9)
+        addSubview(statusDot)
+
+        statusLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        statusLabel.textColor = .secondaryLabelColor
+        statusLabel.lineBreakMode = .byTruncatingTail
+        statusLabel.frame = NSRect(x: 30, y: 7, width: 196, height: 15)
+        addSubview(statusLabel)
+    }
+
+    func update(statusText: String, color: NSColor) {
+        statusLabel.stringValue = statusText
+        statusDot.contentTintColor = color
     }
 }

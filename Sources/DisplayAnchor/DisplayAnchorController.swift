@@ -27,7 +27,7 @@ final class DisplayAnchorController {
             case .paused:
                 return "Paused"
             case .permissionNeeded:
-                return "Accessibility Permission Needed"
+                return "Permission Needed"
             case .snapshotSaved(let count):
                 return "Snapshot Saved: \(count) Windows"
             case .snapshotSkippedFullscreen:
@@ -44,6 +44,21 @@ final class DisplayAnchorController {
                 return "Skipped: Windows Not Ready"
             case .error(let message):
                 return "Error: \(message)"
+            }
+        }
+
+        var indicatorColor: NSColor {
+            switch self {
+            case .idle, .snapshotSaved, .restored:
+                return .systemGreen
+            case .restoreScheduled, .restoreWaitingForUnlock:
+                return .systemBlue
+            case .paused:
+                return .systemGray
+            case .snapshotSkippedFullscreen, .restoreSkippedMissingDisplays, .restoreSkippedWindowsUnavailable:
+                return .systemOrange
+            case .permissionNeeded, .error:
+                return .systemRed
             }
         }
     }

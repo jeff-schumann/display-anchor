@@ -51,6 +51,10 @@ Alternatively, you can open `DisplayAnchor.xcodeproj` and build the `DisplayAnch
 - **DisplayAnchorCore**: Shared models and logic containing AppKit-free code for snapshot data, topology matching, window matching, and restore readiness.
 - **DisplayAnchor**: The thin macOS shell around the core logic that handles sleep/wake hooks, active display reading, menu bar UI, and AX-based window restores.
 
+## Privacy Policy
+
+Please review the [Privacy Policy](PRIVACY.md) to understand how your data is handled. Display Anchor is built with privacy in mind and stores all snapshots locally.
+
 ## License
 
 Copyright © 2026 Jeffrey Schumann. All rights reserved.
